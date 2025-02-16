@@ -1,0 +1,7 @@
+geopy
+requests
+scikit-learn
+fastapi
+uvicorn
+python-dotenv
+numpy

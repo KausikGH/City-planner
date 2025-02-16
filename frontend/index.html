@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI City Planner</title>
+    <link href="https://cdn.osmbuildings.org/4.1.1/OSMBuildings.css" rel="stylesheet">
+    <style>
+        #map { 
+            width: 100vw;
+            height: 100vh;
+        }
+        .sidebar {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 350px;
+            height: 100vh;
+            background: rgba(255,255,255,0.97);
+            padding: 20px;
+            box-shadow: -2px 0 15px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        .error { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="sidebar" id="recommendations"></div>
+
+    <script src="https://cdn.osmbuildings.org/4.1.1/OSMBuildings.js"></script>
+    <script>
+        const map = new OSMBuildings({
+            container: 'map',
+            position: { 
+                latitude: 13.03020,
+                longitude: 80.23857,
+                zoom: 17.4,
+                tilt: 44,
+                rotation: 57
+            },
+            minZoom: 15,
+            maxZoom: 20,
+            effects: ['shadows']
+        });
+
+        // Base map layer with detailed roads
+        map.addMapTiles('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+        
+        // 3D Buildings layer
+        map.addGeoJSONTiles('https://{s}.data.osmbuildings.org/0.2/59fcc2e8/tile/{z}/{x}/{y}.json');
+
+        // Click handler for ANY map location
+        map.on('click', async (e) => {
+            try {
+                const response = await fetch(
+                    `http://localhost:8000/recommend?lat=${e.lat}&lng=${e.lon}`
+                );
+                const data = await response.json();
+                
+                const results = document.getElementById('recommendations');
+                results.innerHTML = data.error ? 
+                    `<div class="error">${data.error}</div>` :
+                    `<h2>AI Recommendation</h2>
+                     <p>📍 ${e.lat.toFixed(5)}, ${e.lon.toFixed(5)}</p>
+                     <p>📏 Area: ${data.analysis.area_m2} m²</p>
+                     <p>🏪 Amenities: ${data.analysis.amenities_count}</p>
+                     <p>🛣 Road Distance: ${data.analysis.road_distance_m}m</p>
+                     <h3>${data.recommendation.type}</h3>
+                     <p>${data.recommendation.reason}</p>`;
+                
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
